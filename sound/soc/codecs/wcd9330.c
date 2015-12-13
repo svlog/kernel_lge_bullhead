@@ -5322,9 +5322,33 @@ static int tomtom_volatile(struct snd_soc_codec *ssc, unsigned int reg)
 	return 0;
 }
 
+static int reg_access(unsigned int reg)
+{
+	int ret = 1;
+
+	switch (reg) {
+		case TOMTOM_A_CDC_RX1_VOL_CTL_B2_CTL:
+		case TOMTOM_A_CDC_RX2_VOL_CTL_B2_CTL:
+			if (soundcontrol.hp_lock)
+                                ret = 0;
+                        break;
+		case TOMTOM_A_CDC_TX6_VOL_CTL_GAIN:
+			if (soundcontrol.mic_lock)
+				ret = 0;
+			break;
+		case TOMTOM_A_CDC_TX4_VOL_CTL_GAIN:
+			if (soundcontrol.camera_mic_lock)
+				ret = 0;
+			break;
+	}
+
+	return ret;
+}
+
 static int tomtom_write(struct snd_soc_codec *codec, unsigned int reg,
 	unsigned int value)
 {
+	int val;
 	int ret;
 	struct wcd9xxx *wcd9xxx = codec->control_data;
 	struct tomtom_priv *tomtom_p = snd_soc_codec_get_drvdata(codec);
@@ -5344,9 +5368,16 @@ static int tomtom_write(struct snd_soc_codec *codec, unsigned int reg,
 	if (unlikely(test_bit(BUS_DOWN, &tomtom_p->status_mask))) {
 		dev_err(codec->dev, "write 0x%02x while offline\n", reg);
 		return -ENODEV;
-	} else
-		return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, value);
+	} else {
+		if (!reg_access(reg))
+			val = wcd9xxx_reg_read(&wcd9xxx->core_res, reg);
+		else
+			val = value;
+
+		return wcd9xxx_reg_write(&wcd9xxx->core_res, reg, val);
+	}
 }
+
 static unsigned int tomtom_read(struct snd_soc_codec *codec,
 				unsigned int reg)
 {
@@ -8877,6 +8908,8 @@ static int tomtom_codec_probe(struct snd_soc_codec *codec)
 	int i, rco_clk_rate;
 	void *ptr = NULL;
 	struct wcd9xxx_core_resource *core_res;
+
+	soundcontrol.snd_control_codec = codec;
 
 	codec->control_data = dev_get_drvdata(codec->dev->parent);
 	control = codec->control_data;
