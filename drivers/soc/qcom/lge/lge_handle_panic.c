@@ -400,6 +400,7 @@ module_param_call(gen_wcnss_panic, gen_wcnss_panic, param_get_bool,
 
 extern void __iomem *wdt_timer_get_timer0_base(void);
 
+#ifdef CONFIG_MSM_WATCHDOG_V2
 static int gen_wdt_bark(const char *val, struct kernel_param *kp)
 {
 	void __iomem *msm_tmr0_base;
@@ -441,6 +442,7 @@ static int gen_wdt_bite(const char *val, struct kernel_param *kp)
 }
 module_param_call(gen_wdt_bite, gen_wdt_bite, param_get_bool,
 		&dummy_arg, S_IWUSR | S_IRUGO);
+#endif
 
 #define REG_MPM2_WDOG_BASE             0xFC4AA000
 #define REG_OFFSET_MPM2_WDOG_RESET     0x0
@@ -581,6 +583,7 @@ static int gen_unknown_reset(const char *val, struct kernel_param *kp)
 module_param_call(gen_unknown_reset, gen_unknown_reset, param_get_bool,
 		&dummy_arg, S_IWUSR | S_IRUGO);
 
+#ifdef CONFIG_MSM_WATCHDOG_V2
 void lge_disable_watchdog(void)
 {
 	static int once = 1;
@@ -599,6 +602,7 @@ void lge_disable_watchdog(void)
 
 	pr_info("%s\n", __func__);
 }
+#endif
 
 void lge_panic_handler_fb_free_page(unsigned long mem_addr, unsigned long size)
 {
